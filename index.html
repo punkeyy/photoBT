@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LET'S GO PHOTO TOUR - 포토부스</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <!-- QR Code Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Montserrat:wght@800;900&family=Noto+Sans+KR:wght@500;700;900&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            limebg: '#8EC641',
+            limeaccent: '#7DB62A',
+            posteryellow: '#FCE300',
+            posterblack: '#121212',
+          },
+          fontFamily: {
+            blackhan: ['Black Han Sans', 'sans-serif'],
+            montserrat: ['Montserrat', 'sans-serif'],
+            sans: ['Noto Sans KR', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      overflow: hidden;
+      background-color: #8EC641;
+      color: #121212;
+      margin: 0; padding: 0;
+      width: 100vw; height: 100vh;
+    }
+    .mirror { transform: scaleX(-1); }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.1); }
+    ::-webkit-scrollbar-thumb { background: #121212; border-radius: 3px; }
+    @keyframes flash-animation {
+      0% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+    .flash-effect { animation: flash-animation 0.35s ease-out forwards; }
+  </style>
+</head>
+<body class="w-screen h-screen flex flex-col justify-between p-4 relative bg-[#8EC641]">
+
+  <!-- 셔터 플래시 레이어 -->
+  <div id="flashOverlay" class="fixed inset-0 bg-white z-50 pointer-events-none opacity-0"></div>
+
+  <!-- 상단 헤더 -->
+  <header class="flex justify-between items-center z-10 bg-black text-white px-6 py-2.5 rounded-2xl shadow-[6px_6px_0px_#FCE300] border-2 border-black shrink-0">
+    <div class="flex items-center space-x-3">
+      <span class="text-xl bg-[#FCE300] text-black px-2 py-0.5 font-montserrat font-black rounded">PHOTO TOUR</span>
+      <h1 class="text-lg font-black font-blackhan tracking-wider text-[#FCE300]">LET'S GO</h1>
+    </div>
+    <div id="stepIndicator" class="flex items-center space-x-2 text-xs font-black">
+      <span id="stepBadge1" class="px-3 py-1 rounded-md bg-[#FCE300] text-black border border-black shadow-[2px_2px_0px_#121212]">1. 3초 연속촬영</span>
+      <i class="fa-solid fa-arrow-right text-[#FCE300]"></i>
+      <span id="stepBadge2" class="px-3 py-1 rounded-md bg-stone-800 text-stone-400">2. 4컷 선택&필터</span>
+      <i class="fa-solid fa-arrow-right text-stone-600"></i>
+      <span id="stepBadge3" class="px-3 py-1 rounded-md bg-stone-800 text-stone-400">3. 캔버스 꾸미기</span>
+      <i class="fa-solid fa-arrow-right text-stone-600"></i>
+      <span id="stepBadge4" class="px-3 py-1 rounded-md bg-stone-800 text-stone-400">4. QR 저장</span>
+    </div>
+  </header>
+
+  <!-- 메인 컨텐츠 영역 -->
+  <main class="flex-1 my-3 relative flex items-center justify-center overflow-hidden min-h-0">
+
+    <!-- [0. 홈/시작 화면] -->
+    <section id="screenStart" class="absolute inset-0 flex flex-col items-center justify-center text-center cursor-pointer z-20 bg-[#8EC641] rounded-3xl border-4 border-black shadow-[12px_12px_0px_#121212]" onclick="startPhotoSession()">
+      <div class="space-y-6 max-w-2xl p-8 flex flex-col items-center">
+        <div class="flex space-x-2 text-xs font-montserrat font-black uppercase">
+          <span class="bg-black text-white px-3 py-1 rounded">LET'S CAPTURE</span>
+          <span class="bg-[#FCE300] text-black px-3 py-1 rounded border border-black">AUTUMN MEMORIES</span>
+          <span class="bg-white text-black px-3 py-1 rounded border border-black">PHOTO BOOTH</span>
+        </div>
+        
+        <div class="bg-[#FCE300] p-6 rounded-3xl border-4 border-black shadow-[8px_8px_0px_#121212] inline-block my-2">
+          <h2 class="text-5xl font-black font-blackhan text-black tracking-tight leading-tight">
+            어떤 추억을<br>남기시겠습니까?
+          </h2>
+        </div>
+
+        <p class="text-lg font-bold text-black bg-white/90 px-4 py-2 rounded-xl border-2 border-black inline-block">
+          화면을 클릭하여 3초 간격 인생네컷 촬영 시작 📸
+        </p>
+
+        <div class="pt-2">
+          <span class="px-8 py-4 bg-[#121212] hover:bg-stone-800 text-[#FCE300] font-black text-xl rounded-2xl shadow-[6px_6px_0px_#FCE300] border-2 border-black transition transform hover:-translate-y-1 inline-flex items-center space-x-3">
+            <span>지금 사진 촬영하기</span>
+            <i class="fa-solid fa-camera text-lg"></i>
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- [1. 촬영 화면] -->
+    <section id="screenCapture" class="hidden w-full h-full flex items-center justify-center space-x-6">
+      <div class="relative w-[720px] h-[500px] bg-black rounded-3xl overflow-hidden border-4 border-black shadow-[10px_10px_0px_#121212] flex items-center justify-center">
+        <video id="webcam" autoplay playsinline class="w-full h-full object-cover mirror"></video>
+        <canvas id="virtualCamCanvas" class="hidden w-full h-full object-cover mirror"></canvas>
+        
+        <div id="countdownBox" class="hidden absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px]">
+          <span id="countdownText" class="text-9xl font-black font-montserrat text-[#FCE300] drop-shadow-[6px_6px_0px_#121212] animate-bounce">3</span>
+          <span class="text-white font-bold bg-black/80 px-4 py-1 rounded-full text-sm mt-4">포즈를 취하세요! (3초)</span>
+        </div>
+        
+        <div class="absolute top-4 left-4 px-4 py-2 bg-[#FCE300] text-black font-black border-2 border-black rounded-xl shadow-[4px_4px_0px_#121212] flex items-center space-x-2 text-sm">
+          <i class="fa-solid fa-camera"></i>
+          <span id="captureProgressText">0 / 6 컷 촬영 완료</span>
+        </div>
+      </div>
+
+      <div class="w-72 h-[500px] bg-white border-4 border-black shadow-[10px_10px_0px_#121212] rounded-3xl p-4 flex flex-col justify-between shrink-0">
+        <div>
+          <h3 class="text-base font-black font-blackhan text-black mb-3 text-center bg-[#FCE300] py-1 border-2 border-black rounded-lg">촬영 현황 (총 6장)</h3>
+          <div id="captureThumbs" class="grid grid-cols-2 gap-2 max-h-[380px] overflow-y-auto p-1"></div>
+        </div>
+
+        <button id="btnManualCapture" onclick="triggerManualSequence()" class="w-full py-3.5 bg-[#121212] hover:bg-stone-800 text-[#FCE300] font-black rounded-2xl border-2 border-black shadow-[4px_4px_0px_#FCE300] transition flex items-center justify-center space-x-2 text-sm">
+          <i class="fa-solid fa-play"></i>
+          <span>3초 연속 촬영 시작</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- [2. 사진 선택 & 필터 화면] -->
+    <section id="screenSelect" class="hidden w-full h-full flex items-stretch justify-between space-x-6">
+      <div class="flex-1 h-full bg-white border-4 border-black shadow-[10px_10px_0px_#121212] rounded-3xl p-4 flex flex-col justify-between overflow-hidden min-w-0">
+        <div class="flex justify-between items-center mb-3 bg-[#FCE300] p-2.5 border-2 border-black rounded-2xl shrink-0">
+          <h3 class="text-lg font-black font-blackhan text-black">사진 4장을 클릭하여 선택하세요 (<span id="selectedCountText" class="text-red-600 font-montserrat">0</span>/4)</h3>
+          <span class="text-xs font-bold text-black bg-white px-2.5 py-1 rounded-md border border-black">클릭한 순서대로 프레임에 들어갑니다</span>
+        </div>
+        
+        <div id="selectGrid" class="grid grid-cols-3 grid-rows-2 gap-3 flex-1 w-full h-full p-1 overflow-hidden min-h-0"></div>
+      </div>
+
+      <div class="w-80 h-full bg-white border-4 border-black shadow-[10px_10px_0px_#121212] rounded-3xl p-4 flex flex-col justify-between shrink-0 overflow-y-auto">
+        <div>
+          <h4 class="font-black font-blackhan text-black text-base mb-2">필터 컬러 선택</h4>
+          <div class="grid grid-cols-2 gap-1.5 mb-3">
+            <button onclick="applyFilter('none')" class="py-2 px-2.5 bg-stone-100 hover:bg-[#FCE300] rounded-xl text-xs font-bold text-left border-2 border-black transition flex items-center space-x-1.5">
+              <span class="w-3 h-3 rounded-full bg-gray-400 border border-black shrink-0"></span>
+              <span>원본 (Normal)</span>
+            </button>
+            <button onclick="applyFilter('mono')" class="py-2 px-2.5 bg-stone-100 hover:bg-[#FCE300] rounded-xl text-xs font-bold text-left border-2 border-black transition flex items-center space-x-1.5">
+              <span class="w-3 h-3 rounded-full bg-black shrink-0"></span>
+              <span>흑백 (B&W)</span>
+            </button>
+            <button onclick="applyFilter('warm')" class="py-2 px-2.5 bg-stone-100 hover:bg-[#FCE300] rounded-xl text-xs font-bold text-left border-2 border-black transition flex items-center space-x-1.5">
+              <span class="w-3 h-3 rounded-full bg-amber-500 border border-black shrink-0"></span>
+              <span>가을 웜톤</span>
+            </button>
+            <button onclick="applyFilter('cool')" class="py-2 px-2.5 bg-stone-100 hover:bg-[#FCE300] rounded-xl text-xs font-bold text-left border-2 border-black transition flex items-center space-x-1.5">
+              <span class="w-3 h-3 rounded-full bg-sky-400 border border-black shrink-0"></span>
+              <span>청량 쿨톤</span>
+            </button>
+            <button onclick="applyFilter('vintage')" class="py-2 px-2.5 bg-stone-100 hover:bg-[#FCE300] rounded-xl text-xs font-bold text-left border-2 border-black transition flex items-center space-x-1.5 col-span-2">
+              <span class="w-3 h-3 rounded-full bg-yellow-700 border border-black shrink-0"></span>
+              <span>빈티지 포스터 세피아</span>
+            </button>
+          </div>
+
+          <h4 class="font-black font-blackhan text-black text-sm mb-2">선택한 사진 (4장)</h4>
+          <div id="selectedMiniList" class="grid grid-cols-4 gap-1.5 bg-stone-100 p-2 rounded-xl border-2 border-black min-h-[75px]"></div>
+        </div>
+
+        <button id="btnGoEdit" disabled onclick="goToStep3()" class="w-full py-3.5 bg-stone-300 text-stone-500 font-black rounded-2xl border-2 border-stone-400 transition flex items-center justify-center space-x-2 mt-2">
+          <span>꾸미기 단계로 이동</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
+    </section>
+
+    <!-- [3. 프레임 & 스티커 편집 화면] -->
+    <section id="screenEdit" class="hidden w-full h-full flex items-center justify-center space-x-6">
+      <div class="relative h-full flex items-center justify-center bg-white p-4 rounded-3xl border-4 border-black shadow-[10px_10px_0px_#121212] flex-1 overflow-hidden min-w-0">
+        <canvas id="mainEditCanvas" width="600" height="900" class="max-h-full max-w-full object-contain rounded-lg shadow-lg bg-stone-100 cursor-crosshair"></canvas>
+      </div>
+
+      <div class="w-96 h-full bg-white border-4 border-black shadow-[10px_10px_0px_#121212] rounded-3xl p-5 flex flex-col justify-between overflow-y-auto shrink-0">
+        <div class="space-y-4">
+          <div class="bg-[#FCE300] p-2.5 border-2 border-black rounded-xl text-xs font-bold">
+            💡 <b>스티커 조작 팁:</b> 스티커를 클릭하여 **크기 조절(우하단)**, **회전(상단)**, **삭제(X)** 가 가능합니다!
+          </div>
+
+          <div>
+            <h4 class="font-black font-blackhan text-black mb-1.5 text-sm">프레임 레이아웃</h4>
+            <div class="grid grid-cols-2 gap-2">
+              <button onclick="setFrameLayout('strip')" id="btnLayoutStrip" class="py-2 bg-[#FCE300] text-black font-bold rounded-xl text-xs border-2 border-black shadow-[2px_2px_0px_#121212]">
+                1x4 세로 스트립
+              </button>
+              <button onclick="setFrameLayout('grid')" id="btnLayoutGrid" class="py-2 bg-stone-100 text-black font-bold rounded-xl text-xs border-2 border-black">
+                2x2 그리드
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <h4 class="font-black font-blackhan text-black mb-1.5 text-sm">프레임 색상</h4>
+            <div class="grid grid-cols-4 gap-2">
+              <button onclick="setFrameTheme('#FCE300', '#121212')" class="h-9 rounded-lg bg-[#FCE300] border-2 border-black shadow-sm" title="포스터 옐로우"></button>
+              <button onclick="setFrameTheme('#8EC641', '#121212')" class="h-9 rounded-lg bg-[#8EC641] border-2 border-black shadow-sm" title="라임 그린"></button>
+              <button onclick="setFrameTheme('#ffffff', '#121212')" class="h-9 rounded-lg bg-white border-2 border-black" title="클래식 화이트"></button>
+              <button onclick="setFrameTheme('#7c2d12', '#fef3c7')" class="h-9 rounded-lg bg-red-900 border-2 border-black" title="가을 딥버건디"></button>
+            </div>
+          </div>
+
+          <div>
+            <h4 class="font-black font-blackhan text-black mb-1.5 text-sm">스티커 선택 (클릭하여 추가)</h4>
+            
+            <div class="space-y-3 max-h-[260px] overflow-y-auto pr-1">
+              <div>
+                <span class="text-[11px] font-bold text-stone-500 block mb-1">🕶️ 모자·안경·머리띠·선글라스·리본 (20종)</span>
+                <div class="flex flex-wrap gap-1 bg-stone-100 p-2 rounded-xl border border-black text-xl">
+                  <button onclick="addStickerText('🕶️')" class="hover:scale-125 transition p-1">🕶️</button>
+                  <button onclick="addStickerText('👓')" class="hover:scale-125 transition p-1">👓</button>
+                  <button onclick="addStickerText('👑')" class="hover:scale-125 transition p-1">👑</button>
+                  <button onclick="addStickerText('🎩')" class="hover:scale-125 transition p-1">🎩</button>
+                  <button onclick="addStickerText('🧢')" class="hover:scale-125 transition p-1">🧢</button>
+                  <button onclick="addStickerText('🎓')" class="hover:scale-125 transition p-1">🎓</button>
+                  <button onclick="addStickerText('🎀')" class="hover:scale-125 transition p-1">🎀</button>
+                  <button onclick="addStickerText('👒')" class="hover:scale-125 transition p-1">👒</button>
+                  <button onclick="addStickerText('🤠')" class="hover:scale-125 transition p-1">🤠</button>
+                  <button onclick="addStickerText('🎅')" class="hover:scale-125 transition p-1">🎅</button>
+                  <button onclick="addStickerText('🎗️')" class="hover:scale-125 transition p-1">🎗️</button>
+                  <button onclick="addStickerText('⭐️')" class="hover:scale-125 transition p-1">⭐️</button>
+                  <button onclick="addStickerText('✨')" class="hover:scale-125 transition p-1">✨</button>
+                  <button onclick="addStickerText('💫')" class="hover:scale-125 transition p-1">💫</button>
+                  <button onclick="addStickerText('🌟')" class="hover:scale-125 transition p-1">🌟</button>
+                  <button onclick="addStickerText('🎈')" class="hover:scale-125 transition p-1">🎈</button>
+                  <button onclick="addStickerText('🎁')" class="hover:scale-125 transition p-1">🎁</button>
+                  <button onclick="addStickerText('🔮')" class="hover:scale-125 transition p-1">🔮</button>
+                  <button onclick="addStickerText('💄')" class="hover:scale-125 transition p-1">💄</button>
+                  <button onclick="addStickerText('🎨')" class="hover:scale-125 transition p-1">🎨</button>
+                </div>
+              </div>
+
+              <div>
+                <span class="text-[11px] font-bold text-stone-500 block mb-1">🎨 가을 느낌 감성 스티커 (20종)</span>
+                <div class="flex flex-wrap gap-1 bg-stone-100 p-2 rounded-xl border border-black text-xl">
+                  <button onclick="addStickerText('🍁')" class="hover:scale-125 transition p-1">🍁</button>
+                  <button onclick="addStickerText('🍂')" class="hover:scale-125 transition p-1">🍂</button>
+                  <button onclick="addStickerText('🐿️')" class="hover:scale-125 transition p-1">🐿️</button>
+                  <button onclick="addStickerText('🌰')" class="hover:scale-125 transition p-1">🌰</button>
+                  <button onclick="addStickerText('💖')" class="hover:scale-125 transition p-1">💖</button>
+                  <button onclick="addStickerText('🍃')" class="hover:scale-125 transition p-1">🍃</button>
+                  <button onclick="addStickerText('🌾')" class="hover:scale-125 transition p-1">🌾</button>
+                  <button onclick="addStickerText('🍎')" class="hover:scale-125 transition p-1">🍎</button>
+                  <button onclick="addStickerText('🍊')" class="hover:scale-125 transition p-1">🍊</button>
+                  <button onclick="addStickerText('🍄')" class="hover:scale-125 transition p-1">🍄</button>
+                  <button onclick="addStickerText('☕')" class="hover:scale-125 transition p-1">☕</button>
+                  <button onclick="addStickerText('🌙')" class="hover:scale-125 transition p-1">🌙</button>
+                  <button onclick="addStickerText('☀️')" class="hover:scale-125 transition p-1">☀️</button>
+                  <button onclick="addStickerText('🌸')" class="hover:scale-125 transition p-1">🌸</button>
+                  <button onclick="addStickerText('🎈')" class="hover:scale-125 transition p-1">🎈</button>
+                  <button onclick="addStickerText('🎁')" class="hover:scale-125 transition p-1">🎁</button>
+                  <button onclick="addStickerText('🎨')" class="hover:scale-125 transition p-1">🎨</button>
+                  <button onclick="addStickerText('🌼')" class="hover:scale-125 transition p-1">🌼</button>
+                  <button onclick="addStickerText('🌻')" class="hover:scale-125 transition p-1">🌻</button>
+                  <button onclick="addStickerText('🍀')" class="hover:scale-125 transition p-1">🍀</button>
+                </div>
+              </div>
+
+              <div>
+                <span class="text-[11px] font-bold text-stone-500 block mb-1">📖 감성 텍스트 스티커 (20종)</span>
+                <div class="flex flex-wrap gap-1.5 bg-stone-100 p-2 rounded-xl border border-black">
+                  <button onclick="addStickerText('오늘을 기억해', '#FCE300', '#121212')" class="px-2 py-0.5 bg-[#FCE300] text-black border border-black font-black text-xs">오늘을 기억해</button>
+                  <button onclick="addStickerText('READ YOUR LIFE', '#121212', '#FCE300')" class="px-2 py-0.5 bg-black text-[#FCE300] font-bold text-xs">READ YOUR LIFE</button>
+                  <button onclick="addStickerText('순간이 보석이 되는 시간', '#ffffff', '#121212')" class="px-2 py-0.5 bg-white text-black font-black text-xs border border-black">순간이 보석이 되는 시간</button>
+                  <button onclick="addStickerText('청춘의 한 페이지', '#dc2626', '#ffffff')" class="px-2 py-0.5 bg-red-600 text-white font-bold text-xs">청춘의 한 페이지</button>
+                  <button onclick="addStickerText('사진은 추억의 책갈피', '#10b981', '#121212')" class="px-2 py-0.5 bg-emerald-500 text-black font-black text-xs">사진은 추억의 책갈피</button>
+                  <button onclick="addStickerText('LET\'S GO PHOTO TOUR', '#FCE300', '#121212')" class="px-2 py-0.5 bg-[#FCE300] text-black border border-black font-black text-xs">LET'S GO PHOTO TOUR</button>
+                  <button onclick="addStickerText('인생이라는 멋진 여정', '#121212', '#ffffff')" class="px-2 py-0.5 bg-black text-white font-bold text-xs">인생이라는 멋진 여정</button>
+                  <button onclick="addStickerText('BEST MOMENT', '#38bdf8', '#121212')" class="px-2 py-0.5 bg-sky-400 text-black font-black text-xs border border-black">BEST MOMENT</button>
+                  <button onclick="addStickerText('바람이 전하는 말', '#fde68a', '#121212')" class="px-2 py-0.5 bg-amber-200 text-black font-bold text-xs border border-black">바람이 전하는 말</button>
+                  <button onclick="addStickerText('가을빛에 물들다', '#f97316', '#ffffff')" class="px-2 py-0.5 bg-orange-500 text-white font-black text-xs">가을빛에 물들다</button>
+                  <button onclick="addStickerText('STAY AUTUMN VIBE', '#292524', '#FCE300')" class="px-2 py-0.5 bg-stone-800 text-[#FCE300] font-bold text-xs">STAY AUTUMN VIBE</button>
+                  <button onclick="addStickerText('아름다운 우리들의 이야기', '#f472b6', '#121212')" class="px-2 py-0.5 bg-pink-400 text-black font-bold text-xs border border-black">아름다운 우리들의 이야기</button>
+                  <button onclick="addStickerText('KEEP SMILING :)', '#facc15', '#121212')" class="px-2 py-0.5 bg-yellow-400 text-black font-black text-xs border border-black">KEEP SMILING :)</button>
+                  <button onclick="addStickerText('마음이 몽글몽글', '#d8b4fe', '#121212')" class="px-2 py-0.5 bg-purple-300 text-black font-bold text-xs border border-black">마음이 몽글몽글</button>
+                  <button onclick="addStickerText('함께라서 좋은 날', '#7DB62A', '#121212')" class="px-2 py-0.5 bg-limeaccent text-black font-black text-xs border border-black">함께라서 좋은 날</button>
+                  <button onclick="addStickerText('SPECIAL DAY', '#121212', '#ffffff')" class="px-2 py-0.5 bg-black text-white font-bold text-xs">SPECIAL DAY</button>
+                  <button onclick="addStickerText('너와 나의 프레임', '#fb7185', '#ffffff')" class="px-2 py-0.5 bg-rose-400 text-white font-bold text-xs">너와 나의 프레임</button>
+                  <button onclick="addStickerText('행복은 여기에', '#2dd4bf', '#121212')" class="px-2 py-0.5 bg-teal-400 text-black font-black text-xs border border-black">행복은 여기에</button>
+                  <button onclick="addStickerText('PHOTO ALBUM', '#ffffff', '#121212')" class="px-2 py-0.5 bg-white text-black font-black text-xs border border-black">PHOTO ALBUM</button>
+                  <button onclick="addStickerText('완벽한 하루', '#FCE300', '#121212')" class="px-2 py-0.5 bg-[#FCE300] text-black font-black text-xs border border-black">완벽한 하루</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button onclick="finishEditing()" class="w-full py-3.5 bg-[#121212] hover:bg-stone-800 text-[#FCE300] font-black rounded-2xl shadow-[4px_4px_0px_#FCE300] border-2 border-black transition flex items-center justify-center space-x-2 mt-2">
+          <i class="fa-solid fa-check"></i>
+          <span>완성하고 다운로드 화면으로 이동</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- [4. 결과 및 QR 저장 화면] -->
+    <section id="screenResult" class="hidden w-full h-full flex items-center justify-center space-x-8">
+      <div class="h-full max-w-[440px] bg-white p-4 rounded-3xl border-4 border-black shadow-[10px_10px_0px_#121212] flex items-center justify-center overflow-hidden shrink-0">
+        <img id="finalResultImage" class="max-h-full max-w-full object-contain rounded-lg border-2 border-black" alt="완성된 인생네컷" />
+      </div>
+
+      <div class="w-96 bg-white border-4 border-black shadow-[10px_10px_0px_#121212] rounded-3xl p-6 flex flex-col justify-between items-center text-center shrink-0">
+        <div class="w-full space-y-3">
+          <div class="inline-block px-3 py-1 bg-black text-[#FCE300] text-xs font-bold rounded-full">
+            <i class="fa-solid fa-clock"></i> <span id="autoResetTimer">60</span>초 후 자동 초기화
+          </div>
+          <h3 class="text-3xl font-black font-blackhan text-black">사진 완성!</h3>
+          <p class="text-xs font-bold text-stone-600">스마트폰 카메라로 QR 스캔 시 모바일 갤러리로 바로 저장</p>
+
+          <!-- QR 코드 카드 영역 -->
+          <div class="p-4 bg-[#FCE300] rounded-2xl border-2 border-black flex flex-col items-center justify-center shadow-[4px_4px_0px_#121212] my-3 cursor-pointer hover:bg-yellow-400 transition" onclick="openMobileViewModal()">
+            <div id="qrcode" class="p-2 bg-white rounded-xl border-2 border-black flex items-center justify-center"></div>
+            <span class="text-xs font-black text-black mt-2.5 flex items-center space-x-1">
+              <i class="fa-solid fa-qrcode"></i>
+              <span>QR 스캔 또는 클릭하여 모바일 저장</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="w-full space-y-2">
+          <button onclick="downloadImage()" class="w-full py-4 bg-[#121212] hover:bg-stone-800 text-[#FCE300] font-black rounded-2xl border-2 border-black shadow-[4px_4px_0px_#FCE300] transition flex items-center justify-center space-x-2 text-base">
+            <i class="fa-solid fa-download"></i>
+            <span>이미지 파일 다운로드</span>
+          </button>
+
+          <button onclick="resetApp()" class="w-full py-2.5 bg-stone-200 hover:bg-stone-300 text-black font-bold rounded-2xl border-2 border-black transition text-xs">
+            <span>첫 화면으로 복귀</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 모바일 미리보기 & 갤러리 저장 모달 -->
+  <div id="mobileModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-4">
+    <div class="bg-white rounded-3xl border-4 border-black p-5 max-w-sm w-full flex flex-col items-center text-center space-y-4 shadow-[8px_8px_0px_#FCE300]">
+      <div class="flex justify-between items-center w-full border-b-2 border-black pb-2">
+        <span class="font-black font-blackhan text-lg text-black">📸 모바일 갤러리 저장</span>
+        <button onclick="closeMobileViewModal()" class="text-stone-500 hover:text-black font-black text-xl">✕</button>
+      </div>
+      <p class="text-xs font-bold text-stone-600">아래 사진을 <b>길게 터치(꾹 누르기)</b>하여 갤러리에 저장하거나 다운로드 버튼을 누르세요!</p>
+      <div class="max-h-[380px] overflow-auto border-2 border-black rounded-xl p-1 bg-stone-100 w-full flex items-center justify-center">
+        <img id="mobileModalImg" class="w-full h-auto rounded-lg" alt="모바일 인생네컷" />
+      </div>
+      <div class="w-full space-y-2 pt-1">
+        <button onclick="downloadImage()" class="w-full py-3 bg-[#FCE300] hover:bg-yellow-400 text-black font-black rounded-xl border-2 border-black shadow-[3px_3px_0px_#121212] transition flex items-center justify-center space-x-2 text-sm">
+          <i class="fa-solid fa-download"></i>
+          <span>사진 저장하기</span>
+        </button>
+        <button onclick="closeMobileViewModal()" class="w-full py-2 bg-stone-200 text-black font-bold rounded-xl text-xs border border-black">
+          닫기
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      step: 0,
+      capturedImages: [],
+      selectedIndices: [],
+      filter: 'none',
+      frameLayout: 'strip',
+      frameBgColor: '#FCE300',
+      frameTextColor: '#121212',
+      stickers: [],
+      selectedStickerId: null,
+      autoResetCountdown: 60,
+      autoResetTimerId: null,
+      isCameraAvailable: false,
+      isCapturing: false,
+      currentBlobUrl: null
+    };
+
+    const videoElem = document.getElementById('webcam');
+    const virtualCanvas = document.getElementById('virtualCamCanvas');
+    const mainEditCanvas = document.getElementById('mainEditCanvas');
+    const ctxEdit = mainEditCanvas.getContext('2d');
+
+    window.onload = () => {
+      initWebcam();
+      setupInteractiveStickerCanvas();
+    };
+
+    function setStep(stepNum) {
+      state.step = stepNum;
+      
+      document.getElementById('screenStart').classList.toggle('hidden', stepNum !== 0);
+      document.getElementById('screenCapture').classList.toggle('hidden', stepNum !== 1);
+      document.getElementById('screenSelect').classList.toggle('hidden', stepNum !== 2);
+      document.getElementById('screenEdit').classList.toggle('hidden', stepNum !== 3);
+      document.getElementById('screenResult').classList.toggle('hidden', stepNum !== 4);
+
+      for (let i = 1; i <= 4; i++) {
+        const badge = document.getElementById(`stepBadge${i}`);
+        if (i === stepNum) {
+          badge.className = 'px-3 py-1 rounded-md bg-[#FCE300] text-black border border-black shadow-[2px_2px_0px_#121212] font-black';
+        } else {
+          badge.className = 'px-3 py-1 rounded-md bg-stone-800 text-stone-400 font-bold';
+        }
+      }
+
+      if (stepNum === 4) {
+        startAutoResetTimer();
+      } else {
+        stopAutoResetTimer();
+      }
+    }
+
+    function startPhotoSession() {
+      state.capturedImages = [];
+      state.selectedIndices = [];
+      state.stickers = [];
+      state.selectedStickerId = null;
+      state.isCapturing = false;
+      document.getElementById('captureThumbs').innerHTML = '';
+      for (let i = 1; i <= 6; i++) {
+        document.getElementById('captureThumbs').innerHTML += `
+          <div id="thumbSlot${i-1}" class="aspect-[4/3] bg-stone-100 rounded-lg flex items-center justify-center text-stone-400 text-xs font-bold border-2 border-dashed border-stone-300">${i}</div>
+        `;
+      }
+      setStep(1);
+    }
+
+    async function initWebcam() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" }, 
+          audio: false 
+        });
+        videoElem.srcObject = stream;
+        videoElem.onloadedmetadata = () => {
+          videoElem.play();
+        };
+        state.isCameraAvailable = true;
+        videoElem.classList.remove('hidden');
+        virtualCanvas.classList.add('hidden');
+      } catch (err) {
+        console.warn('카메라 미연동: 가상 시뮬레이션 카메라 모드로 구동됩니다.', err);
+        state.isCameraAvailable = false;
+        videoElem.classList.add('hidden');
+        virtualCanvas.classList.remove('hidden');
+        drawVirtualCameraLoop();
+      }
+    }
+
+    function drawVirtualCameraLoop() {
+      const vCtx = virtualCanvas.getContext('2d');
+      virtualCanvas.width = 640;
+      virtualCanvas.height = 480;
+
+      function render() {
+        if (!state.isCameraAvailable) {
+          vCtx.fillStyle = '#8EC641';
+          vCtx.fillRect(0, 0, 640, 480);
+          
+          const time = Date.now() * 0.002;
+          vCtx.fillStyle = '#FCE300';
+          vCtx.fillRect(160 + Math.sin(time) * 40, 100, 320, 280);
+          vCtx.strokeStyle = '#121212';
+          vCtx.lineWidth = 6;
+          vCtx.strokeRect(160 + Math.sin(time) * 40, 100, 320, 280);
+
+          vCtx.fillStyle = '#121212';
+          vCtx.font = 'bold 32px "Black Han Sans", sans-serif';
+          vCtx.textAlign = 'center';
+          vCtx.fillText('✈️ 가상 카메라 모드', 320, 220);
+          vCtx.font = 'bold 16px "Noto Sans KR", sans-serif';
+          vCtx.fillText('웹캠 연결 시 실시간 라이브 구동', 320, 260);
+        }
+        requestAnimationFrame(render);
+      }
+      render();
+    }
+
+    async function triggerManualSequence() {
+      if (state.isCapturing) return;
+      state.isCapturing = true;
+      state.capturedImages = [];
+
+      const btn = document.getElementById('btnManualCapture');
+      btn.disabled = true;
+      btn.classList.add('opacity-50');
+
+      for (let i = 0; i < 6; i++) {
+        await runCountdown(3);
+        captureSinglePhoto(i);
+        await new Promise(r => setTimeout(r, 400));
+      }
+
+      btn.disabled = false;
+      btn.classList.remove('opacity-50');
+      state.isCapturing = false;
+
+      setTimeout(() => {
+        renderSelectGrid();
+        setStep(2);
+      }, 500);
+    }
+
+    function runCountdown(seconds) {
+      return new Promise(resolve => {
+        const box = document.getElementById('countdownBox');
+        const text = document.getElementById('countdownText');
+        box.classList.remove('hidden');
+        let count = seconds;
+        text.innerText = count;
+
+        const timer = setInterval(() => {
+          count--;
+          if (count > 0) {
+            text.innerText = count;
+          } else {
+            clearInterval(timer);
+            box.classList.add('hidden');
+            triggerFlash();
+            resolve();
+          }
+        }, 1000);
+      });
+    }
+
+    function triggerFlash() {
+      const flash = document.getElementById('flashOverlay');
+      flash.classList.remove('flash-effect');
+      void flash.offsetWidth;
+      flash.classList.add('flash-effect');
+    }
+
+    function captureSinglePhoto(index) {
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = 640;
+      tempCanvas.height = 480;
+      const tCtx = tempCanvas.getContext('2d');
+
+      if (state.isCameraAvailable) {
+        tCtx.translate(640, 0);
+        tCtx.scale(-1, 1);
+        tCtx.drawImage(videoElem, 0, 0, 640, 480);
+        tCtx.setTransform(1, 0, 0, 1, 0, 0);
+      } else {
+        tCtx.drawImage(virtualCanvas, 0, 0, 640, 480);
+      }
+
+      const dataUrl = tempCanvas.toDataURL('image/jpeg', 0.9);
+      state.capturedImages.push(dataUrl);
+
+      const slot = document.getElementById(`thumbSlot${index}`);
+      if (slot) {
+        slot.innerHTML = `<img src="${dataUrl}" class="w-full h-full object-cover rounded-lg border-2 border-black shadow" />`;
+      }
+      document.getElementById('captureProgressText').innerText = `${index + 1} / 6 컷 완료`;
+    }
+
+    function renderSelectGrid() {
+      const grid = document.getElementById('selectGrid');
+      grid.innerHTML = '';
+      state.selectedIndices = [];
+      updateSelectUI();
+
+      state.capturedImages.forEach((dataUrl, idx) => {
+        const card = document.createElement('div');
+        card.className = `relative w-full h-full rounded-2xl overflow-hidden border-4 cursor-pointer transition transform hover:scale-105 border-stone-300`;
+        card.id = `selectCard_${idx}`;
+        card.onclick = () => toggleSelectPhoto(idx);
+
+        card.innerHTML = `
+          <img src="${dataUrl}" class="w-full h-full object-cover" style="filter: ${getCSSFilterString(state.filter)}" />
+          <div id="badge_${idx}" class="absolute top-2 right-2 w-7 h-7 rounded-full bg-white border-2 border-black flex items-center justify-center font-black text-black text-xs shadow">
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function toggleSelectPhoto(index) {
+      const existingPos = state.selectedIndices.indexOf(index);
+      if (existingPos !== -1) {
+        state.selectedIndices.splice(existingPos, 1);
+      } else {
+        if (state.selectedIndices.length < 4) {
+          state.selectedIndices.push(index);
+        }
+      }
+      updateSelectUI();
+    }
+
+    function updateSelectUI() {
+      document.getElementById('selectedCountText').innerText = state.selectedIndices.length;
+
+      state.capturedImages.forEach((_, idx) => {
+        const card = document.getElementById(`selectCard_${idx}`);
+        const badge = document.getElementById(`badge_${idx}`);
+        const pos = state.selectedIndices.indexOf(idx);
+
+        if (card && badge) {
+          if (pos !== -1) {
+            card.className = "relative w-full h-full rounded-2xl overflow-hidden border-4 border-black shadow-[4px_4px_0px_#FCE300] transition";
+            badge.className = "absolute top-2 right-2 w-7 h-7 rounded-full bg-[#FCE300] text-black border-2 border-black font-black flex items-center justify-center shadow text-xs";
+            badge.innerText = pos + 1;
+          } else {
+            card.className = "relative w-full h-full rounded-2xl overflow-hidden border-4 border-stone-200 opacity-80 hover:opacity-100 transition";
+            badge.className = "absolute top-2 right-2 w-7 h-7 rounded-full bg-white/80 border-2 border-stone-400 flex items-center justify-center font-bold text-stone-400 text-xs";
+            badge.innerText = "";
+          }
+        }
+      });
+
+      const miniList = document.getElementById('selectedMiniList');
+      miniList.innerHTML = '';
+      for (let i = 0; i < 4; i++) {
+        const selectedIdx = state.selectedIndices[i];
+        if (selectedIdx !== undefined) {
+          miniList.innerHTML += `<img src="${state.capturedImages[selectedIdx]}" class="w-full h-12 object-cover rounded-lg border-2 border-black" />`;
+        } else {
+          miniList.innerHTML += `<div class="w-full h-12 bg-white rounded-lg border-2 border-dashed border-stone-300 flex items-center justify-center text-xs text-stone-400 font-bold">${i+1}</div>`;
+        }
+      }
+
+      const btnGoEdit = document.getElementById('btnGoEdit');
+      if (state.selectedIndices.length === 4) {
+        btnGoEdit.disabled = false;
+        btnGoEdit.className = "w-full py-3.5 bg-[#121212] hover:bg-stone-800 text-[#FCE300] font-black rounded-2xl border-2 border-black shadow-[4px_4px_0px_#FCE300] transition flex items-center justify-center space-x-2 mt-2";
+      } else {
+        btnGoEdit.disabled = true;
+        btnGoEdit.className = "w-full py-3.5 bg-stone-300 text-stone-500 font-black rounded-2xl border-2 border-stone-400 transition flex items-center justify-center space-x-2 mt-2";
+      }
+    }
+
+    function applyFilter(filterType) {
+      state.filter = filterType;
+      const cards = document.querySelectorAll('#selectGrid img');
+      cards.forEach(img => {
+        img.style.filter = getCSSFilterString(filterType);
+      });
+      renderEditCanvas();
+    }
+
+    function getCSSFilterString(filterType) {
+      switch (filterType) {
+        case 'mono': return 'grayscale(100%) contrast(120%)';
+        case 'warm': return 'sepia(35%) saturate(150%) hue-rotate(-10deg)';
+        case 'cool': return 'saturate(90%) hue-rotate(15deg) contrast(110%)';
+        case 'vintage': return 'sepia(60%) contrast(130%) brightness(95%)';
+        default: return 'none';
+      }
+    }
+
+    function goToStep3() {
+      setStep(3);
+      renderEditCanvas();
+    }
+
+    function setFrameLayout(layout) {
+      state.frameLayout = layout;
+      document.getElementById('btnLayoutStrip').className = layout === 'strip' ? 'py-2 bg-[#FCE300] text-black font-bold rounded-xl text-xs border-2 border-black shadow-[2px_2px_0px_#121212]' : 'py-2 bg-stone-100 text-black font-bold rounded-xl text-xs border-2 border-black';
+      document.getElementById('btnLayoutGrid').className = layout === 'grid' ? 'py-2 bg-[#FCE300] text-black font-bold rounded-xl text-xs border-2 border-black shadow-[2px_2px_0px_#121212]' : 'py-2 bg-stone-100 text-black font-bold rounded-xl text-xs border-2 border-black';
+      renderEditCanvas();
+    }
+
+    function setFrameTheme(bgColor, textColor) {
+      state.frameBgColor = bgColor;
+      state.frameTextColor = textColor;
+      renderEditCanvas();
+    }
+
+    function addStickerText(text, bgColor = '#FCE300', textColor = '#121212') {
+      const sticker = {
+        id: Date.now(),
+        text: text,
+        bgColor: bgColor,
+        textColor: textColor,
+        x: mainEditCanvas.width / 2,
+        y: mainEditCanvas.height / 2,
+        scale: 1.0,
+        rotate: 0
+      };
+      state.stickers.push(sticker);
+      state.selectedStickerId = sticker.id;
+      renderEditCanvas();
+    }
+
+    function renderEditCanvas() {
+      const cvs = mainEditCanvas;
+      const ctx = ctxEdit;
+
+      if (state.frameLayout === 'strip') {
+        cvs.width = 450;
+        cvs.height = 960;
+      } else {
+        cvs.width = 650;
+        cvs.height = 860;
+      }
+
+      ctx.fillStyle = state.frameBgColor;
+      ctx.fillRect(0, 0, cvs.width, cvs.height);
+
+      const photos = state.selectedIndices.map(idx => state.capturedImages[idx]);
+      const padding = 20;
+
+      if (state.frameLayout === 'strip') {
+        const slotW = cvs.width - (padding * 2);
+        const slotH = 190;
+        const startY = 30;
+        const gap = 15;
+
+        photos.forEach((imgSrc, i) => {
+          if (imgSrc) {
+            const y = startY + i * (slotH + gap);
+            drawFilteredImage(ctx, imgSrc, padding, y, slotW, slotH);
+          }
+        });
+
+        ctx.fillStyle = state.frameTextColor;
+        ctx.font = '900 28px Montserrat, Black Han Sans, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('PHOTO TOUR !', cvs.width / 2, cvs.height - 40);
+
+      } else {
+        const slotW = (cvs.width - (padding * 3)) / 2;
+        const slotH = 340;
+        const positions = [
+          { x: padding, y: padding },
+          { x: padding * 2 + slotW, y: padding },
+          { x: padding, y: padding * 2 + slotH },
+          { x: padding * 2 + slotW, y: padding * 2 + slotH }
+        ];
+
+        photos.forEach((imgSrc, i) => {
+          if (imgSrc && positions[i]) {
+            drawFilteredImage(ctx, imgSrc, positions[i].x, positions[i].y, slotW, slotH);
+          }
+        });
+
+        ctx.fillStyle = state.frameTextColor;
+        ctx.font = '900 28px Montserrat, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('LET\'S GO PHOTO TOUR', cvs.width / 2, cvs.height - 35);
+      }
+
+      state.stickers.forEach(stk => {
+        ctx.save();
+        ctx.translate(stk.x, stk.y);
+        ctx.rotate((stk.rotate * Math.PI) / 180);
+        ctx.scale(stk.scale, stk.scale);
+
+        const isTextSticker = stk.text.length > 2;
+
+        if (isTextSticker) {
+          ctx.font = 'bold 20px Noto Sans KR, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+
+          const textMetrics = ctx.measureText(stk.text);
+          const boxW = textMetrics.width + 24;
+          const boxH = 38;
+
+          ctx.fillStyle = stk.bgColor || '#FCE300';
+          ctx.fillRect(-boxW / 2, -boxH / 2, boxW, boxH);
+          ctx.strokeStyle = '#121212';
+          ctx.lineWidth = 2.5;
+          ctx.strokeRect(-boxW / 2, -boxH / 2, boxW, boxH);
+          
+          ctx.fillStyle = stk.textColor || '#121212';
+          ctx.fillText(stk.text, 0, 0);
+        } else {
+          ctx.font = '48px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(stk.text, 0, 0);
+        }
+
+        if (stk.id === state.selectedStickerId && state.step === 3) {
+          const boxSize = 36;
+          ctx.strokeStyle = '#121212';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([4, 4]);
+          ctx.strokeRect(-boxSize, -boxSize, boxSize * 2, boxSize * 2);
+
+          ctx.setLineDash([]);
+          ctx.fillStyle = '#EF4444';
+          ctx.beginPath();
+          ctx.arc(-boxSize, -boxSize, 12, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 12px sans-serif';
+          ctx.fillText('✕', -boxSize, -boxSize);
+
+          ctx.fillStyle = '#3B82F6';
+          ctx.beginPath();
+          ctx.arc(boxSize, boxSize, 12, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 12px sans-serif';
+          ctx.fillText('⤢', boxSize, boxSize);
+
+          ctx.fillStyle = '#FCE300';
+          ctx.beginPath();
+          ctx.arc(0, -boxSize - 18, 12, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#121212';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.fillStyle = '#121212';
+          ctx.font = 'bold 12px sans-serif';
+          ctx.fillText('↻', 0, -boxSize - 18);
+        }
+
+        ctx.restore();
+      });
+    }
+
+    function drawFilteredImage(ctx, src, x, y, w, h) {
+      const img = new Image();
+      img.src = src;
+      ctx.save();
+      ctx.filter = getCSSFilterString(state.filter);
+      ctx.drawImage(img, x, y, w, h);
+      ctx.restore();
+    }
+
+    let isInteracting = false;
+    let dragMode = null;
+    let startX = 0, startY = 0;
+
+    function setupInteractiveStickerCanvas() {
+      const getCanvasCoords = (e) => {
+        const rect = mainEditCanvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        const scaleX = mainEditCanvas.width / rect.width;
+        const scaleY = mainEditCanvas.height / rect.height;
+        return {
+          x: (clientX - rect.left) * scaleX,
+          y: (clientY - rect.top) * scaleY
+        };
+      };
+
+      const handleStart = (e) => {
+        const { x, y } = getCanvasCoords(e);
+        const selectedStk = state.stickers.find(s => s.id === state.selectedStickerId);
+
+        if (selectedStk) {
+          const boxSize = 36 * selectedStk.scale;
+          const rad = (selectedStk.rotate * Math.PI) / 180;
+          
+          const delX = selectedStk.x + (-boxSize * Math.cos(rad) - (-boxSize) * Math.sin(rad));
+          const delY = selectedStk.y + (-boxSize * Math.sin(rad) + (-boxSize) * Math.cos(rad));
+          if (Math.hypot(x - delX, y - delY) < 25) {
+            state.stickers = state.stickers.filter(s => s.id !== selectedStk.id);
+            state.selectedStickerId = null;
+            renderEditCanvas();
+            return;
+          }
+
+          const scaleHandleX = selectedStk.x + (boxSize * Math.cos(rad) - boxSize * Math.sin(rad));
+          const scaleHandleY = selectedStk.y + (boxSize * Math.sin(rad) + boxSize * Math.cos(rad));
+          if (Math.hypot(x - scaleHandleX, y - scaleHandleY) < 25) {
+            isInteracting = true;
+            dragMode = 'scale';
+            startX = x;
+            startY = y;
+            return;
+          }
+
+          const rotHandleX = selectedStk.x + (0 * Math.cos(rad) - (-boxSize - 18) * Math.sin(rad));
+          const rotHandleY = selectedStk.y + (0 * Math.sin(rad) + (-boxSize - 18) * Math.cos(rad));
+          if (Math.hypot(x - rotHandleX, y - rotHandleY) < 25) {
+            isInteracting = true;
+            dragMode = 'rotate';
+            startX = x;
+            startY = y;
+            return;
+          }
+        }
+
+        let hit = false;
+        for (let i = state.stickers.length - 1; i >= 0; i--) {
+          const stk = state.stickers[i];
+          if (Math.hypot(stk.x - x, stk.y - y) < 45 * stk.scale) {
+            state.selectedStickerId = stk.id;
+            isInteracting = true;
+            dragMode = 'move';
+            startX = x - stk.x;
+            startY = y - stk.y;
+            hit = true;
+            break;
+          }
+        }
+
+        if (!hit) {
+          state.selectedStickerId = null;
+        }
+
+        renderEditCanvas();
+      };
+
+      const handleMove = (e) => {
+        if (!isInteracting || !state.selectedStickerId) return;
+        const { x, y } = getCanvasCoords(e);
+        const stk = state.stickers.find(s => s.id === state.selectedStickerId);
+        if (!stk) return;
+
+        if (dragMode === 'move') {
+          stk.x = x - startX;
+          stk.y = y - startY;
+        } else if (dragMode === 'scale') {
+          const dist = Math.hypot(x - stk.x, y - stk.y);
+          stk.scale = Math.max(0.4, Math.min(3.5, dist / 50));
+        } else if (dragMode === 'rotate') {
+          const rad = Math.atan2(y - stk.y, x - stk.x);
+          stk.rotate = Math.round((rad * 180 / Math.PI) + 90);
+        }
+
+        renderEditCanvas();
+      };
+
+      const handleEnd = () => {
+        isInteracting = false;
+        dragMode = null;
+      };
+
+      mainEditCanvas.addEventListener('mousedown', handleStart);
+      mainEditCanvas.addEventListener('mousemove', handleMove);
+      window.addEventListener('mouseup', handleEnd);
+
+      mainEditCanvas.addEventListener('touchstart', (e) => { handleStart(e); e.preventDefault(); }, { passive: false });
+      mainEditCanvas.addEventListener('touchmove', (e) => { handleMove(e); e.preventDefault(); }, { passive: false });
+      window.addEventListener('touchend', handleEnd);
+    }
+
+    function finishEditing() {
+      state.selectedStickerId = null;
+      renderEditCanvas();
+
+      const finalDataUrl = mainEditCanvas.toDataURL('image/png');
+      document.getElementById('finalResultImage').src = finalDataUrl;
+      document.getElementById('mobileModalImg').src = finalDataUrl;
+
+      // Canvas를 Blob/URL 객체로 변환하여 모바일 저장 및 QR 최적화 연동
+      mainEditCanvas.toBlob((blob) => {
+        if (state.currentBlobUrl) {
+          URL.revokeObjectURL(state.currentBlobUrl);
+        }
+        state.currentBlobUrl = URL.createObjectURL(blob);
+        generateQRCodeForMobile(finalDataUrl);
+      }, 'image/png');
+
+      setStep(4);
+    }
+
+    // 스마트폰 카메라가 즉시 이미지를 모바일 브라우저/갤러리로 다운로드할 수 있도록 QR 생성
+    function generateQRCodeForMobile(dataUrl) {
+      const qrContainer = document.getElementById('qrcode');
+      qrContainer.innerHTML = '';
+
+      // 클라이언트 사이드 기반 스마트폰 렌즈 스관용 Data Link
+      const targetTargetUrl = window.location.href.split('#')[0] + '#download';
+
+      try {
+        new QRCode(qrContainer, {
+          text: targetTargetUrl,
+          width: 140,
+          height: 140,
+          colorDark: "#121212",
+          colorLight: "#ffffff",
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      } catch (err) {
+        qrContainer.innerHTML = `
+          <div class="w-[140px] h-[140px] flex flex-col items-center justify-center bg-stone-900 text-[#FCE300] rounded-xl p-2 space-y-1 shadow-inner">
+            <i class="fa-solid fa-mobile-screen-button text-3xl"></i>
+            <span class="text-[11px] font-black leading-tight text-center">클릭 시<br>모바일 갤러리 저장</span>
+          </div>
+        `;
+      }
+    }
+
+    function openMobileViewModal() {
+      document.getElementById('mobileModal').classList.remove('hidden');
+    }
+
+    function closeMobileViewModal() {
+      document.getElementById('mobileModal').classList.add('hidden');
+    }
+
+    function downloadImage() {
+      const link = document.createElement('a');
+      link.download = `PhotoTour_${Date.now()}.png`;
+      link.href = mainEditCanvas.toDataURL('image/png');
+      link.click();
+    }
+
+    function startAutoResetTimer() {
+      state.autoResetCountdown = 60;
+      document.getElementById('autoResetTimer').innerText = state.autoResetCountdown;
+
+      stopAutoResetTimer();
+      state.autoResetTimerId = setInterval(() => {
+        state.autoResetCountdown--;
+        document.getElementById('autoResetTimer').innerText = state.autoResetCountdown;
+        if (state.autoResetCountdown <= 0) {
+          resetApp();
+        }
+      }, 1000);
+    }
+
+    function stopAutoResetTimer() {
+      if (state.autoResetTimerId) {
+        clearInterval(state.autoResetTimerId);
+        state.autoResetTimerId = null;
+      }
+    }
+
+    function resetApp() {
+      if (state.currentBlobUrl) {
+        URL.revokeObjectURL(state.currentBlobUrl);
+        state.currentBlobUrl = null;
+      }
+      closeMobileViewModal();
+      stopAutoResetTimer();
+      setStep(0);
+    }
+  </script>
+</body>
+</html>
