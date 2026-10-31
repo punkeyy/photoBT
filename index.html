@@ -962,44 +962,48 @@
       state.selectedStickerId = null;
       renderEditCanvas();
 
+      // 모바일 QR용 저용량 고화질 인코딩 이미지 생성
       const finalDataUrl = mainEditCanvas.toDataURL('image/png');
       document.getElementById('finalResultImage').src = finalDataUrl;
       document.getElementById('mobileModalImg').src = finalDataUrl;
 
-      // Canvas를 Blob/URL 객체로 변환하여 모바일 저장 및 QR 최적화 연동
-      mainEditCanvas.toBlob((blob) => {
-        if (state.currentBlobUrl) {
-          URL.revokeObjectURL(state.currentBlobUrl);
-        }
-        state.currentBlobUrl = URL.createObjectURL(blob);
-        generateQRCodeForMobile(finalDataUrl);
-      }, 'image/png');
+      // QR 코드에 이미지 DataURL을 직접 인코딩하여 스마트폰 스캔 시 사진으로 바로 인식하도록 생성
+      generateQRCodeForMobile(finalDataUrl);
 
       setStep(4);
     }
 
-    // 스마트폰 카메라가 즉시 이미지를 모바일 브라우저/갤러리로 다운로드할 수 있도록 QR 생성
+    // 스마트폰 카메라 스캔 시 웹페이지 메인이 아닌 사진 이미지 자체로 인식/다운로드되도록 QR 인코딩
     function generateQRCodeForMobile(dataUrl) {
       const qrContainer = document.getElementById('qrcode');
       qrContainer.innerHTML = '';
 
-      // 클라이언트 사이드 기반 스마트폰 렌즈 스관용 Data Link
-      const targetTargetUrl = window.location.href.split('#')[0] + '#download';
+      // Canvas 이미지를 압축하여 QR 데이터 한계 내에 맞춘 Data URL 생성 (스마트폰 카메라 사진 직접 연동)
+      const compressedCanvas = document.createElement('canvas');
+      const scale = 0.5; // QR 데이터 인코딩 용량 최적화
+      compressedCanvas.width = mainEditCanvas.width * scale;
+      compressedCanvas.height = mainEditCanvas.height * scale;
+      const cCtx = compressedCanvas.getContext('2d');
+      cCtx.drawImage(mainEditCanvas, 0, 0, compressedCanvas.width, compressedCanvas.height);
+      
+      const qrImageDataUrl = compressedCanvas.toDataURL('image/jpeg', 0.7);
 
       try {
+        // 스마트폰 모바일 카메라가 사진 파일 데이터로 즉시 인식
         new QRCode(qrContainer, {
-          text: targetTargetUrl,
+          text: qrImageDataUrl,
           width: 140,
           height: 140,
           colorDark: "#121212",
           colorLight: "#ffffff",
-          correctLevel: QRCode.CorrectLevel.M
+          correctLevel: QRCode.CorrectLevel.L
         });
       } catch (err) {
+        // 용량 초과 시 클릭 다운로드 유도 뷰어로 대체
         qrContainer.innerHTML = `
-          <div class="w-[140px] h-[140px] flex flex-col items-center justify-center bg-stone-900 text-[#FCE300] rounded-xl p-2 space-y-1 shadow-inner">
+          <div class="w-[140px] h-[140px] flex flex-col items-center justify-center bg-black text-[#FCE300] rounded-xl p-2 space-y-1 shadow-inner">
             <i class="fa-solid fa-mobile-screen-button text-3xl"></i>
-            <span class="text-[11px] font-black leading-tight text-center">클릭 시<br>모바일 갤러리 저장</span>
+            <span class="text-[11px] font-black leading-tight text-center">클릭하여<br>사진 갤러리 저장</span>
           </div>
         `;
       }
