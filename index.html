@@ -962,46 +962,68 @@
       state.selectedStickerId = null;
       renderEditCanvas();
 
-      // 모바일 QR용 저용량 고화질 인코딩 이미지 생성
       const finalDataUrl = mainEditCanvas.toDataURL('image/png');
       document.getElementById('finalResultImage').src = finalDataUrl;
       document.getElementById('mobileModalImg').src = finalDataUrl;
 
-      // QR 코드에 이미지 DataURL을 직접 인코딩하여 스마트폰 스캔 시 사진으로 바로 인식하도록 생성
-      generateQRCodeForMobile(finalDataUrl);
+      // 이미지 업로드 및 QR 코드 생성 시작
+      uploadAndGenerateQR(finalDataUrl);
 
       setStep(4);
     }
 
-    // 스마트폰 카메라 스캔 시 웹페이지 메인이 아닌 사진 이미지 자체로 인식/다운로드되도록 QR 인코딩
-    function generateQRCodeForMobile(dataUrl) {
+    // [핵심] Imgur 무료 이미지 업로드를 이용한 모바일 QR 스캔 다운로드 구현
+    async function uploadAndGenerateQR(dataUrl) {
       const qrContainer = document.getElementById('qrcode');
-      qrContainer.innerHTML = '';
-
-      // Canvas 이미지를 압축하여 QR 데이터 한계 내에 맞춘 Data URL 생성 (스마트폰 카메라 사진 직접 연동)
-      const compressedCanvas = document.createElement('canvas');
-      const scale = 0.5; // QR 데이터 인코딩 용량 최적화
-      compressedCanvas.width = mainEditCanvas.width * scale;
-      compressedCanvas.height = mainEditCanvas.height * scale;
-      const cCtx = compressedCanvas.getContext('2d');
-      cCtx.drawImage(mainEditCanvas, 0, 0, compressedCanvas.width, compressedCanvas.height);
-      
-      const qrImageDataUrl = compressedCanvas.toDataURL('image/jpeg', 0.7);
+      qrContainer.innerHTML = `
+        <div class="w-[140px] h-[140px] flex flex-col items-center justify-center bg-stone-100 rounded-xl p-2 text-stone-600 space-y-1">
+          <i class="fa-solid fa-spinner fa-spin text-2xl text-black"></i>
+          <span class="text-[11px] font-bold text-center">QR 생성 중...</span>
+        </div>
+      `;
 
       try {
-        // 스마트폰 모바일 카메라가 사진 파일 데이터로 즉시 인식
-        new QRCode(qrContainer, {
-          text: qrImageDataUrl,
-          width: 140,
-          height: 140,
-          colorDark: "#121212",
-          colorLight: "#ffffff",
-          correctLevel: QRCode.CorrectLevel.L
+        // Base64 데이터를 Blob으로 변환
+        const base64Data = dataUrl.replace(/^data:image\/(png|jpeg);base64,/, "");
+        const formData = new FormData();
+        formData.append('image', base64Data);
+        formData.append('type', 'base64');
+
+        // Imgur 익명 업로드 API 호출 (무료 Client ID)
+        const response = await fetch('https://api.imgur.com/3/image', {
+          method: 'POST',
+          headers: {
+            Authorization: 'Client-ID c98246cb32cf3ca' // 무료 퍼블릭 데모 Client-ID
+          },
+          body: formData
         });
+
+        const result = await response.json();
+
+        if (result.success && result.data && result.data.link) {
+          const imageUrl = result.data.link;
+          qrContainer.innerHTML = '';
+          
+          // 스마트폰이 인식 가능한 고화질 다운로드 URL로 QR 생성
+          new QRCode(qrContainer, {
+            text: imageUrl,
+            width: 140,
+            height: 140,
+            colorDark: "#121212",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.M
+          });
+
+          // 모바일 미리보기 모달에도 업로드 URL 연결
+          document.getElementById('mobileModalImg').src = imageUrl;
+        } else {
+          throw new Error('Upload failed');
+        }
       } catch (err) {
-        // 용량 초과 시 클릭 다운로드 유도 뷰어로 대체
+        console.warn('이미지 업로드 실패, 로컬 다운로드 모드로 대체합니다.', err);
+        // 네트워크 오프라인 또는 API 제한 시 로컬 가이드 표시
         qrContainer.innerHTML = `
-          <div class="w-[140px] h-[140px] flex flex-col items-center justify-center bg-black text-[#FCE300] rounded-xl p-2 space-y-1 shadow-inner">
+          <div class="w-[140px] h-[140px] flex flex-col items-center justify-center bg-stone-900 text-[#FCE300] rounded-xl p-2 space-y-1 shadow-inner cursor-pointer" onclick="openMobileViewModal()">
             <i class="fa-solid fa-mobile-screen-button text-3xl"></i>
             <span class="text-[11px] font-black leading-tight text-center">클릭하여<br>사진 갤러리 저장</span>
           </div>
